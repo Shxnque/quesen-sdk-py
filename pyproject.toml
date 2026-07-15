@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quesen-sdk"
+version = "0.1.0"
+description = "Official Python SDK for Quesen — the deterministic AI decision engine for autonomous-agent risk evaluation."
+authors = [{ name = "Senueren Bureau" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["quesen", "a2a", "agents", "risk", "mcp", "langchain", "determinism"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "httpx>=0.27.0,<1.0.0",
+  "typing-extensions>=4.5.0; python_version<'3.11'",
+]
+
+[project.urls]
+Homepage = "https://github.com/Shxnque/Quesen-sib"
+Source = "https://github.com/Shxnque/quesen-sdk-py"
+Issues = "https://github.com/Shxnque/quesen-sdk-py/issues"
+Documentation = "https://github.com/Shxnque/Quesen-sib#readme"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "respx>=0.21.0",
+  "ruff>=0.5.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["quesen_sdk*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
