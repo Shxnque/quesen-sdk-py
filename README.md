@@ -1,9 +1,9 @@
 # Quesen Python SDK
 
-> Official typed Python client for [Quesen-SIB](https://github.com/Shxnque/Quesen-sib) — the deterministic A2A risk-evaluation API.
+> Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic A2A risk-evaluation API.
 
-**Status:** v0.1.0 · tracks Quesen engine v1.3.0 · backward compatible with v1.0.0+ deployments.
-**Governance:** [`Shxnque/Quesen-sib` DOCTRINE.md](https://github.com/Shxnque/Quesen-sib/blob/main/DOCTRINE.md) is the source of truth. This SDK is a friction reducer; every operational rule lives in the parent repo.
+**Status:** v0.1.0 · tracks Quesen engine v1.9.0 · backward compatible with v1.0.0+ deployments.
+**Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the engine is served at `https://web-production-30ab5.up.railway.app`.
 
 ---
 

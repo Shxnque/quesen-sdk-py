@@ -9,7 +9,7 @@ Public surface:
     QuesenError, QuesenAuthError, QuesenRateLimitError, QuesenValidationError,
     QuesenServerError, QuesenTimeout, QuesenTransportError — error hierarchy
 
-Doctrine anchors (parent repo Shxnque/Quesen-sib DOCTRINE.md):
+Doctrine anchors (see https://senueren.co.za/quesen for public design principles):
     §1   Priority order: revenue > adoption > determinism > moat > infra.
     §2   Determinism preserved: this SDK does not add ML, prompts, randomness.
     §11  Ecosystem neutrality: single runtime dependency `httpx`.

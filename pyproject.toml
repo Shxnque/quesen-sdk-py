@@ -28,10 +28,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Shxnque/Quesen-sib"
+Homepage = "https://senueren.co.za/quesen"
 Source = "https://github.com/Shxnque/quesen-sdk-py"
 Issues = "https://github.com/Shxnque/quesen-sdk-py/issues"
-Documentation = "https://github.com/Shxnque/Quesen-sib#readme"
+Documentation = "https://senueren.co.za/quesen"
 
 [project.optional-dependencies]
 dev = [
