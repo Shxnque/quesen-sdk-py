@@ -13,6 +13,11 @@ Doctrine anchors (see https://senueren.co.za/quesen for public design principles
     §1   Priority order: revenue > adoption > determinism > moat > infra.
     §2   Determinism preserved: this SDK does not add ML, prompts, randomness.
     §11  Ecosystem neutrality: single runtime dependency `httpx`.
+
+v0.2.0 — tracks Quesen engine v1.10.0 (ADR-041 receipt provenance). Every
+`ValidateResult` now carries `input_snapshot_hash` and `commit_sha` when the
+engine is v1.10.0+. Both fields default to "" against older engines so
+existing callers keep working unchanged.
 """
 
 from .client import AsyncQuesenClient, QuesenClient
@@ -35,7 +40,7 @@ from .types import (
     ThresholdsSnapshot,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "__version__",

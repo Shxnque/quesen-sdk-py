@@ -48,6 +48,13 @@ class ValidateResult:
     engine_version: str
     weights: WeightsSnapshot
     thresholds: ThresholdsSnapshot
+    # v1.10.0 (ADR-041) receipt provenance pair. Always present on live
+    # engines running v1.10.0 or newer. When talking to an older engine that
+    # has not yet been upgraded, both fields default to the empty string so
+    # existing callers keep working. See the developer portal for the
+    # canonical field contract: https://senueren.co.za/quesen.
+    input_snapshot_hash: str = ""
+    commit_sha: str = ""
     client_request_id: Optional[str] = None
     key_owner: Optional[str] = None
     raw: Dict[str, Any] = field(default_factory=dict)
@@ -72,6 +79,8 @@ class ValidateResult:
             engine_version=str(d["engine_version"]),
             weights=WeightsSnapshot.from_dict(d["weights"]),
             thresholds=ThresholdsSnapshot.from_dict(d["thresholds"]),
+            input_snapshot_hash=str(d.get("input_snapshot_hash", "")),
+            commit_sha=str(d.get("commit_sha", "")),
             client_request_id=d.get("client_request_id"),
             key_owner=d.get("key_owner"),
             raw=dict(d),

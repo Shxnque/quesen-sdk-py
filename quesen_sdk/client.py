@@ -32,7 +32,7 @@ from .types import ReportResult, SimulateResult, ValidateResult
 
 __all__ = ["QuesenClient", "AsyncQuesenClient", "DEFAULT_USER_AGENT"]
 
-DEFAULT_USER_AGENT = "quesen-sdk-py/0.1.0"
+DEFAULT_USER_AGENT = "quesen-sdk-py/0.2.0"
 _DEFAULT_TIMEOUT = 5.0
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF = 0.2

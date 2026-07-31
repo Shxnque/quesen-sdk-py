@@ -188,3 +188,71 @@ async def test_async_health_and_version():
         assert h["status"] == "ok"
         v = await c.version()
         assert v["report_schema_version"]
+
+
+# ---------------- v1.10 receipt provenance (ADR-041) ----------------
+
+def test_sync_validate_carries_input_snapshot_hash_and_commit_sha(live_server):
+    """v1.10 · engine returns input_snapshot_hash + commit_sha; SDK surfaces both."""
+    import hashlib
+    import json
+
+    with _sync(live_server) as c:
+        payload = {
+            "domain_age_days": 42,
+            "engagement_ratio": 0.5,
+            "scam_keyword_count": 1,
+        }
+        r = c.validate(**payload)
+
+        # Both fields must be present as typed attributes.
+        assert isinstance(r.input_snapshot_hash, str)
+        assert isinstance(r.commit_sha, str)
+
+        # input_snapshot_hash: 64-char lowercase hex.
+        assert len(r.input_snapshot_hash) == 64
+        assert all(ch in "0123456789abcdef" for ch in r.input_snapshot_hash)
+
+        # commit_sha: either 40-char hex or the sentinel "unknown".
+        assert r.commit_sha == "unknown" or (
+            len(r.commit_sha) == 40
+            and all(ch in "0123456789abcdef" for ch in r.commit_sha)
+        )
+
+        # Determinism: same inputs must produce the same input_snapshot_hash.
+        r2 = c.validate(**payload)
+        assert r2.input_snapshot_hash == r.input_snapshot_hash
+
+        # Client-side reconstruction must match server-side hash.
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                               ensure_ascii=False, allow_nan=False).encode("utf-8")
+        assert hashlib.sha256(canonical).hexdigest() == r.input_snapshot_hash
+
+
+def test_sync_client_request_id_excluded_from_input_snapshot_hash(live_server):
+    """The client_request_id trace id must not perturb input_snapshot_hash."""
+    with _sync(live_server) as c:
+        base = c.validate(domain_age_days=100, engagement_ratio=0.5)
+        traced = c.validate(domain_age_days=100, engagement_ratio=0.5,
+                            client_request_id="trace-xyz")
+        assert base.input_snapshot_hash == traced.input_snapshot_hash
+
+
+def test_validate_result_from_dict_defaults_provenance_on_older_engine():
+    """Backward compatibility: an older engine that does not send the two fields
+    must not break the SDK; both fields default to the empty string."""
+    from quesen_sdk import ValidateResult
+
+    result = ValidateResult.from_dict({
+        "decision": "PROCEED",
+        "risk_score": 0.1,
+        "confidence": 1.0,
+        "conflict_triggers": [],
+        "latency_ms": 1,
+        "request_id": "abc",
+        "engine_version": "1.9.0",
+        "weights": {"domain_age": 0.4, "engagement": 0.35, "scam_keywords": 0.25},
+        "thresholds": {"skip": 0.65, "review": 0.35},
+    })
+    assert result.input_snapshot_hash == ""
+    assert result.commit_sha == ""
