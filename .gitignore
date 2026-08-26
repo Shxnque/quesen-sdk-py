@@ -9,3 +9,8 @@ build/
 .ruff_cache/
 .venv/
 *.log
+.venv/
+dist/
+node_modules/
+__pycache__/
+*.egg-info/
