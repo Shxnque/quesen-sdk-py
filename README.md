@@ -2,8 +2,8 @@
 
 > Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic A2A risk-evaluation API.
 
-**Status:** v0.2.0 · tracks Quesen engine v1.10.0 · backward compatible with v1.0.0+ deployments.
-**Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the engine is served at `https://web-production-30ab5.up.railway.app`.
+**Status:** v0.3.0 · tracks Quesen engine v1.10.0 (+ TSC v2 agent firewall) · backward compatible with v1.0.0+ deployments.
+**Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the hosted engine is served at `https://web-production-aa5ba.up.railway.app`.
 
 ---
 
@@ -42,6 +42,62 @@ print(result.commit_sha)            # 40-char git SHA of the engine ruleset that
 ```
 
 ---
+
+## Agent Firewall (TSC v2) — one call before any high-risk action
+
+TSC v2 turns Quesen into a deterministic **agent firewall**: describe what your
+autonomous agent is *about to do* and get a `PASS` / `REVIEW` / `BLOCK` / `SKIP`
+verdict plus a tamper-evident audit receipt — *before* the action crosses a trust
+boundary. Secret/credential egress to an untrusted destination is deterministically
+blocked; suspected prompt injection is sent to review; unauthorized privilege
+grants are refused.
+
+> Requires an engine running with `QUESEN_TSC_V2_ENABLED=true` (route `POST /tsc/validate`).
+
+```python
+from quesen_sdk import QuesenClient
+from quesen_sdk.tsc import TscContext, TscBlocked
+
+client = QuesenClient(base_url="https://<your-quesen-endpoint>", api_key="sk_live_abc")
+
+# Your agent is about to POST data somewhere. Ask Quesen first.
+decision = client.validate_tsc(
+    TscContext.data_egress(
+        data_classes=["secret"],          # what's leaving
+        to="https://paste.evil.example",  # where it's going
+        destination_trust="unverified",
+        framework="langchain",
+    )
+)
+
+print(decision.decision)       # 'BLOCK'
+print(decision.reason_codes)   # ['EGRESS_SECRET_UNTRUSTED']
+print(decision.tags)           # ['exfiltration']
+print(decision.commit_sha, decision.input_snapshot_hash)  # audit receipt
+
+# Fail-closed gate: raise unless the engine explicitly returned PASS.
+try:
+    decision.require_pass()
+    run_the_tool()             # only reached on PASS
+except TscBlocked as e:
+    log_and_stop(e.decision)   # BLOCK / REVIEW / SKIP never runs the tool
+```
+
+Scenario builders cover the common catastrophic actions:
+
+| Builder | Agent is about to… |
+|---|---|
+| `TscContext.data_egress(...)` | send data OUT (exfiltration / PII / secret leakage) |
+| `TscContext.tool_call(...)` | invoke a tool/capability (privilege + injection checks) |
+| `TscContext.payment(...)` | move money / perform a financial action |
+
+You can also pass a plain `dict` (or anything with `.to_dict()`) to
+`client.validate_tsc(...)` for full control of the [Typed Security Context schema](https://github.com/Shxnque/quesen/tree/main/docs/security-context).
+
+Runnable demos: [`examples/agent_firewall.py`](examples/agent_firewall.py) (pure SDK)
+and [`examples/langchain_firewall.py`](examples/langchain_firewall.py) (LangChain tool wrapper).
+
+Async is symmetric — `await AsyncQuesenClient(...).validate_tsc(ctx)`.
 
 ## Receipt provenance (v1.10, tracked in SDK v0.2.0)
 

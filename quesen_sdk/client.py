@@ -28,11 +28,26 @@ from .errors import (
     QuesenTransportError,
     QuesenValidationError,
 )
+from .tsc import TscContext, TscDecision
 from .types import ReportResult, SimulateResult, ValidateResult
 
 __all__ = ["QuesenClient", "AsyncQuesenClient", "DEFAULT_USER_AGENT"]
 
-DEFAULT_USER_AGENT = "quesen-sdk-py/0.2.0"
+DEFAULT_USER_AGENT = "quesen-sdk-py/0.3.0"
+
+
+def _tsc_body(context: Any) -> Dict[str, Any]:
+    """Accept a TscContext, a plain dict, or anything with .to_dict()."""
+    if isinstance(context, TscContext):
+        return context.to_dict()
+    if isinstance(context, Mapping):
+        return dict(context)
+    to_dict = getattr(context, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    raise QuesenError(
+        "validate_tsc expects a TscContext, a dict, or an object with .to_dict()"
+    )
 _DEFAULT_TIMEOUT = 5.0
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF = 0.2
@@ -189,6 +204,29 @@ class QuesenClient:
         data = self._request("POST", "/validate", json_body=body, request_id=client_request_id)
         return ValidateResult.from_dict(data)
 
+    def validate_tsc(
+        self,
+        context: Any,
+        *,
+        client_request_id: Optional[str] = None,
+    ) -> TscDecision:
+        """Agent firewall: evaluate a Typed Security Context (TSC v2).
+
+        Returns a deterministic PASS / REVIEW / BLOCK / SKIP decision plus an
+        audit receipt. `context` may be a :class:`~quesen_sdk.tsc.TscContext`,
+        a plain dict, or any object exposing ``.to_dict()``.
+
+        Requires an engine running with ``QUESEN_TSC_V2_ENABLED=true``; against
+        an engine without the flag the route is absent and this raises
+        :class:`QuesenError` (404 -> unexpected status), fail-closed.
+        """
+        body = _tsc_body(context)
+        if client_request_id and "client_request_id" not in body:
+            body["client_request_id"] = client_request_id
+        data = self._request("POST", "/tsc/validate", json_body=body,
+                             request_id=client_request_id or body.get("client_request_id"))
+        return TscDecision.from_dict(data)
+
     def simulate(
         self,
         domain_age_days: Optional[int] = None,
@@ -324,6 +362,23 @@ class AsyncQuesenClient:
         })
         data = await self._request("POST", "/validate", json_body=body, request_id=client_request_id)
         return ValidateResult.from_dict(data)
+
+    async def validate_tsc(
+        self,
+        context: Any,
+        *,
+        client_request_id: Optional[str] = None,
+    ) -> TscDecision:
+        """Async agent firewall: evaluate a Typed Security Context (TSC v2).
+
+        See :meth:`QuesenClient.validate_tsc` for semantics.
+        """
+        body = _tsc_body(context)
+        if client_request_id and "client_request_id" not in body:
+            body["client_request_id"] = client_request_id
+        data = await self._request("POST", "/tsc/validate", json_body=body,
+                                   request_id=client_request_id or body.get("client_request_id"))
+        return TscDecision.from_dict(data)
 
     async def simulate(
         self,
