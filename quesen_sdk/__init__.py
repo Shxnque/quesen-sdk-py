@@ -39,8 +39,14 @@ from .types import (
     WeightsSnapshot,
     ThresholdsSnapshot,
 )
+from .tsc import (
+    TscContext,
+    TscDecision,
+    TscReason,
+    TscBlocked,
+)
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "__version__",
@@ -53,6 +59,10 @@ __all__ = [
     "ReportOutcomeCounters",
     "WeightsSnapshot",
     "ThresholdsSnapshot",
+    "TscContext",
+    "TscDecision",
+    "TscReason",
+    "TscBlocked",
     "QuesenError",
     "QuesenAuthError",
     "QuesenRateLimitError",
