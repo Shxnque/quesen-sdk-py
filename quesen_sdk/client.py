@@ -33,7 +33,7 @@ from .types import ReportResult, SimulateResult, ValidateResult
 
 __all__ = ["QuesenClient", "AsyncQuesenClient", "DEFAULT_USER_AGENT"]
 
-DEFAULT_USER_AGENT = "quesen-sdk-py/0.3.0"
+DEFAULT_USER_AGENT = "quesen-sdk-py/0.4.1"
 
 
 def _tsc_body(context: Any) -> Dict[str, Any]:
@@ -186,6 +186,28 @@ class QuesenClient:
 
     def version(self) -> Dict[str, Any]:
         return self._request("GET", "/version")
+
+    def create_sandbox_key(self, *, set_on_client: bool = True) -> Dict[str, Any]:
+        """Self-serve a FREE, rate-limited sandbox API key — no signup, no card.
+
+        Calls ``POST /sandbox/keys`` and, by default, configures *this* client to
+        use the returned key for every subsequent call, so a fresh developer goes
+        from install to a real deterministic decision without hunting for an
+        undocumented key-minting step:
+
+            client = QuesenClient(base_url="https://<engine>")
+            client.create_sandbox_key()      # now authenticated (free sandbox tier)
+            client.validate_tsc(ctx)         # works — no 401
+
+        Returns the full response (``api_key``, ``tier``, ``rate_limit_per_min``,
+        ``starter_credits``, ``engine_version`` ...). Sandbox keys are zero-cost
+        and rate-limited; for production volume see the billing endpoints.
+        """
+        data = self._request("POST", "/sandbox/keys", json_body={})
+        key = data.get("api_key")
+        if set_on_client and key:
+            self.api_key = str(key)
+        return data
 
     def validate(
         self,
@@ -345,6 +367,15 @@ class AsyncQuesenClient:
 
     async def version(self) -> Dict[str, Any]:
         return await self._request("GET", "/version")
+
+    async def create_sandbox_key(self, *, set_on_client: bool = True) -> Dict[str, Any]:
+        """Async: self-serve a FREE sandbox API key. See
+        :meth:`QuesenClient.create_sandbox_key` for semantics."""
+        data = await self._request("POST", "/sandbox/keys", json_body={})
+        key = data.get("api_key")
+        if set_on_client and key:
+            self.api_key = str(key)
+        return data
 
     async def validate(
         self,

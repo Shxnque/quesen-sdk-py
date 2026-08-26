@@ -4,6 +4,24 @@ All notable changes to `quesen-sdk` (Python) will be documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-08-27 · Frictionless onboarding (self-serve sandbox key)
+
+### Added
+- **`QuesenFirewall.sandbox(base_url)`** — zero-config entry point. Mints a FREE
+  sandbox API key automatically so a fresh developer goes from `pip install` to a
+  real deterministic BLOCK in one call, with no signup, no card, and no
+  undocumented key-minting step.
+- **`QuesenClient.create_sandbox_key()`** (sync + async) — wraps `POST /sandbox/keys`;
+  by default configures the client to use the returned key for subsequent calls.
+
+### Fixed
+- **Onboarding blocker**: the documented quickstart previously implied `api_key`
+  was optional against the hosted engine, but production requires a key. A fresh
+  developer hit `401 unauthorized` on the first firewall call with no in-SDK way
+  to obtain a key. The README now shows the true install → key → decision path.
+- Corrected `User-Agent` (`quesen-sdk-py/0.3.0` → `0.4.1`) and stale version
+  strings in docs.
+
 ## [0.4.0] — 2026-08-26 · QuesenFirewall ergonomic wrapper
 
 ### Added

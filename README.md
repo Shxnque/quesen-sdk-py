@@ -1,8 +1,8 @@
 # Quesen Python SDK
 
-> Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic A2A risk-evaluation API.
+> Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic agent-firewall / A2A risk-evaluation API.
 
-**Status:** v0.3.0 · tracks Quesen engine v1.10.0 (+ TSC v2 agent firewall) · backward compatible with v1.0.0+ deployments.
+**Status:** v0.4.1 · tracks Quesen engine v1.10.0 (+ TSC v2 agent firewall) · backward compatible with v1.0.0+ deployments.
 **Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the hosted engine is served at `https://web-production-aa5ba.up.railway.app`.
 
 ---
@@ -17,15 +17,55 @@ Python 3.9+, single runtime dependency (`httpx`).
 
 ---
 
-## 30-second usage
+## 30-second agent firewall (copy-paste, no signup)
+
+The fastest path from install to a real deterministic decision. `QuesenFirewall.sandbox()`
+self-serves a **free** sandbox key for you (no signup, no card), so this runs as-is:
+
+```python
+from quesen_sdk import QuesenFirewall, TscBlocked
+
+# Zero-config: mints a free sandbox key against the hosted engine.
+fw = QuesenFirewall.sandbox("https://web-production-aa5ba.up.railway.app")
+
+# Your agent is about to exfiltrate a secret to an untrusted host. Ask Quesen first.
+try:
+    fw.require_pass(
+        agent="my-agent",
+        action="send_data",
+        target="https://paste.evil.example",
+        data_class="secret",
+    )
+    send_the_data()            # only runs on an explicit PASS
+except TscBlocked as e:
+    print(e.decision.decision)      # 'BLOCK'
+    print(e.decision.reason_codes)  # ['EGRESS_SECRET_UNTRUSTED']
+    print(e.decision.tags)          # ['exfiltration']
+    print(e.decision.commit_sha)    # 40-char audit-receipt ruleset pin
+```
+
+A safe action returns PASS instead:
+
+```python
+d = fw.check(agent="my-agent", action="tool_call", capability_class="read")
+print(d.decision)          # 'PASS'
+```
+
+> **Getting a key manually.** `QuesenFirewall.sandbox(...)` and
+> `QuesenClient.create_sandbox_key()` both call `POST /sandbox/keys` for a free,
+> rate-limited sandbox key. For production volume, pass your own
+> `api_key="sk_live_..."`. The hosted engine **requires** a key — there is no
+> open mode — but the sandbox key above is issued instantly with no signup.
+
+---
+
+## Lower-level client (scam/A2A risk `/validate`)
 
 ```python
 from quesen_sdk import QuesenClient
 
-client = QuesenClient(
-    base_url="https://<your-quesen-endpoint>",
-    api_key="sk_live_abc",  # optional if the deployment is in open mode
-)
+client = QuesenClient(base_url="https://web-production-aa5ba.up.railway.app")
+client.create_sandbox_key()   # free key, now authenticated
 
 result = client.validate(
     domain_age_days=1,
@@ -35,7 +75,6 @@ result = client.validate(
 
 print(result.decision)              # 'SKIP'
 print(result.risk_score)            # 1.0
-print(result.conflict_triggers)     # ['New domain (<=30d) + unusually high engagement (>=0.50)', ...]
 print(result.request_id)            # UUID — pass to client.report() later
 print(result.input_snapshot_hash)   # 64-char SHA-256 hex — self-contained replay primitive (v1.10+)
 print(result.commit_sha)            # 40-char git SHA of the engine ruleset that produced the verdict (v1.10+)
@@ -58,7 +97,8 @@ grants are refused.
 from quesen_sdk import QuesenClient
 from quesen_sdk.tsc import TscContext, TscBlocked
 
-client = QuesenClient(base_url="https://<your-quesen-endpoint>", api_key="sk_live_abc")
+client = QuesenClient(base_url="https://web-production-aa5ba.up.railway.app")
+client.create_sandbox_key()   # free key (or pass api_key="sk_live_..." for production)
 
 # Your agent is about to POST data somewhere. Ask Quesen first.
 decision = client.validate_tsc(
@@ -154,7 +194,8 @@ import asyncio
 from quesen_sdk import AsyncQuesenClient
 
 async def main() -> None:
-    async with AsyncQuesenClient(base_url="https://q.example.com", api_key="sk_live_abc") as q:
+    async with AsyncQuesenClient(base_url="https://web-production-aa5ba.up.railway.app") as q:
+        await q.create_sandbox_key()   # free key (or pass api_key="sk_live_..." above)
         decision = await q.validate(domain_age_days=200, engagement_ratio=0.3)
         if decision.decision == "SKIP":
             return  # don't act
@@ -181,10 +222,12 @@ asyncio.run(main())
 
 ## API surface
 
-Sync client: `QuesenClient(base_url, api_key=None, timeout=5.0, retries=2, retry_backoff=0.2, request_id_header="X-Request-ID", user_agent="quesen-sdk-py/0.2.0")`
+Sync client: `QuesenClient(base_url, api_key=None, timeout=5.0, retries=2, retry_backoff=0.2, request_id_header="X-Request-ID", user_agent="quesen-sdk-py/0.4.1")`
 
 | Method | Wraps | Purpose |
 |---|---|---|
+| `client.create_sandbox_key()` | `POST /sandbox/keys` | Self-serve a FREE sandbox key (no signup); auto-applied to the client. |
+| `client.validate_tsc(ctx)` | `POST /tsc/validate` | **Agent firewall** — PASS/REVIEW/BLOCK/SKIP + audit receipt. |
 | `client.health()` | `GET /health` | Liveness. |
 | `client.version()` | `GET /version` | Engine + weights + thresholds. |
 | `client.validate(...)` | `POST /validate` | Deterministic decision. Response carries `input_snapshot_hash` + `commit_sha` against v1.10+ engines. |

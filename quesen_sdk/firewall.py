@@ -52,6 +52,25 @@ class QuesenFirewall:
     ) -> None:
         self._client = client or QuesenClient(base_url=base_url, api_key=api_key, **client_kwargs)
 
+    @classmethod
+    def sandbox(cls, base_url: str, **client_kwargs: Any) -> "QuesenFirewall":
+        """Zero-config firewall — mints a FREE sandbox key automatically.
+
+        The single frictionless entry point for a fresh developer: install,
+        point at a Quesen deployment, and immediately get real deterministic
+        decisions (no signup, no card, no undocumented key step):
+
+            from quesen_sdk import QuesenFirewall
+
+            fw = QuesenFirewall.sandbox("https://web-production-aa5ba.up.railway.app")
+            fw.require_pass(agent="my-agent", action="send_data",
+                            target="https://paste.evil.example",
+                            data_class="secret")   # raises TscBlocked (BLOCK)
+        """
+        client = QuesenClient(base_url=base_url, **client_kwargs)
+        client.create_sandbox_key()
+        return cls(client=client)
+
     # ---- context construction from friendly kwargs ----
     def _build(
         self,

@@ -64,3 +64,42 @@ def test_data_class_accepts_list():
     fw = _fw()
     fw.check(action="egress", target="x", data_class=["secret", "pii"])
     assert set(_last["data"]["classes"]) == {"secret", "pii"}
+
+
+# --- onboarding: self-serve sandbox key (v0.4.1) ---
+
+_SANDBOX_RESP = {
+    "api_key": "sk_sandbox_deadbeef", "tier": "sandbox", "price_per_call": 0.0,
+    "rate_limit_per_min": 30, "starter_credits": 1000, "engine_version": "1.10.0",
+}
+
+
+def _onboarding_handler(req: httpx.Request) -> httpx.Response:
+    if req.url.path == "/sandbox/keys":
+        assert req.method == "POST"
+        return httpx.Response(200, json=_SANDBOX_RESP)
+    # firewall path requires the key to have been applied
+    assert req.headers.get("X-API-Key") == "sk_sandbox_deadbeef"
+    body = json.loads(req.content)
+    classes = body.get("data", {}).get("classes", [])
+    return httpx.Response(200, json=_BLOCK if "secret" in classes else _PASS)
+
+
+def test_create_sandbox_key_sets_client_key():
+    client = QuesenClient(base_url="http://engine", retries=0,
+                          transport=httpx.MockTransport(_onboarding_handler))
+    assert client.api_key is None
+    resp = client.create_sandbox_key()
+    assert resp["api_key"] == "sk_sandbox_deadbeef"
+    assert client.api_key == "sk_sandbox_deadbeef"
+
+
+def test_firewall_sandbox_onboarding_end_to_end():
+    """Fresh-dev path: no key -> QuesenFirewall.sandbox mints one -> BLOCK works."""
+    # Patch QuesenClient construction inside .sandbox() by injecting a transport
+    # via client_kwargs (QuesenFirewall.sandbox forwards **client_kwargs).
+    fw = QuesenFirewall.sandbox("http://engine", retries=0,
+                                transport=httpx.MockTransport(_onboarding_handler))
+    with pytest.raises(TscBlocked):
+        fw.require_pass(agent="a", action="send_data",
+                        target="https://paste.evil", data_class="secret")
