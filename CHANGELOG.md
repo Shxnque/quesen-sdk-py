@@ -4,6 +4,22 @@ All notable changes to `quesen-sdk` (Python) will be documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-08-26 · QuesenFirewall ergonomic wrapper
+
+### Added
+- **`QuesenFirewall`** — one-call agent-firewall surface over `validate_tsc`:
+  `fw.require_pass(agent=..., action="send_data", target=url, data_class="secret")`
+  raises `TscBlocked` on anything but PASS. Friendly `action` aliases route to the
+  right TSC builder (egress / payment / tool_call). Also `check()` (raw decision)
+  and `allows()` (bool). No new decision logic — the engine stays the sole authority.
+- `tests/test_firewall.py` (self-contained, httpx MockTransport).
+
+### Changed
+- `__version__` `0.3.0` → `0.4.0`.
+
+### Backward compatibility
+- Fully additive; `validate_tsc`, `TscContext`, and all v1 methods unchanged.
+
 ## [0.3.0] — 2026-08-26 · TSC v2 agent firewall (tracks engine v1.10.0 + ADR-042)
 
 ### Added
