@@ -37,8 +37,15 @@ def _reload_app(env: dict | None = None):
             del os.environ[k]
     if env:
         os.environ.update(env)
-    from quesen import keys, telegram, reports  # noqa: F401
-    from quesen import api as api_module
+    try:
+        from quesen import keys, telegram, reports  # noqa: F401
+        from quesen import api as api_module
+    except ImportError:
+        # The sovereign engine package `quesen` lives in the private monorepo
+        # (Quesen-sib), not in this split-out SDK repo. Engine-dependent
+        # integration tests skip cleanly here; unit tests (client wiring, tsc
+        # builders, receipt verification) still run standalone.
+        pytest.skip("engine package 'quesen' not available in standalone SDK repo")
     importlib.reload(keys)
     importlib.reload(telegram)
     importlib.reload(reports)

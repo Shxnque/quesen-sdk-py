@@ -38,8 +38,11 @@ def _reload_app_for_async(env: dict | None = None):
             del os.environ[k]
     if env:
         os.environ.update(env)
-    from quesen import keys, telegram, reports  # noqa: F401
-    from quesen import api as api_module
+    try:
+        from quesen import keys, telegram, reports  # noqa: F401
+        from quesen import api as api_module
+    except ImportError:
+        pytest.skip("engine package 'quesen' not available in standalone SDK repo")
     importlib.reload(keys)
     importlib.reload(telegram)
     importlib.reload(reports)

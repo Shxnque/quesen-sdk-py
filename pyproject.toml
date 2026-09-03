@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quesen-sdk"
-version = "0.4.1"
+version = "0.5.0"
 description = "Official Python SDK for Quesen — the deterministic AI decision engine for autonomous-agent risk evaluation."
 authors = [{ name = "Senueren Bureau" }]
 license = { text = "MIT" }
