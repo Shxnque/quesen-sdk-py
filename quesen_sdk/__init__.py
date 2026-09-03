@@ -46,8 +46,9 @@ from .tsc import (
     TscBlocked,
 )
 from .firewall import QuesenFirewall
+from .receipt import ReceiptVerification, canonical_receipt_bytes, verify_receipt
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 __all__ = [
     "__version__",
@@ -65,6 +66,9 @@ __all__ = [
     "TscReason",
     "TscBlocked",
     "QuesenFirewall",
+    "ReceiptVerification",
+    "verify_receipt",
+    "canonical_receipt_bytes",
     "QuesenError",
     "QuesenAuthError",
     "QuesenRateLimitError",

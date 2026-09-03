@@ -136,6 +136,38 @@ class QuesenFirewall:
         """
         return self.check(**kwargs).require_pass()
 
+    def guard(self, **guard_kwargs: Any):
+        """Enforcement mode: decorate a function so it is *gated*, not merely advised.
+
+        This closes the "advisory-only" gap — instead of returning a verdict the
+        integrator must remember to honour, the wrapped callable simply does not
+        execute unless the engine returns PASS (fail-closed on BLOCK/REVIEW/SKIP
+        and on transport error). The verdict is attached to the wrapper as
+        ``.last_decision`` for auditing.
+
+            @fw.guard(action="payment", trust_tier="unverified")
+            def send_funds(to, amount): ...
+
+            send_funds("0xabc", 5)   # raises TscBlocked unless PASS
+
+        Per-call overrides may be passed via the ``_quesen`` kwarg:
+            send_funds("0xabc", 5, _quesen={"target": "0xabc"})
+        """
+        import functools
+
+        def _decorator(fn):
+            @functools.wraps(fn)
+            def _wrapper(*args: Any, **kwargs: Any):
+                overrides = kwargs.pop("_quesen", None) or {}
+                decision = self.check(**{**guard_kwargs, **overrides})
+                _wrapper.last_decision = decision  # type: ignore[attr-defined]
+                decision.require_pass()  # raises TscBlocked on anything but PASS
+                return fn(*args, **kwargs)
+            _wrapper.last_decision = None  # type: ignore[attr-defined]
+            return _wrapper
+
+        return _decorator
+
     def close(self) -> None:
         self._client.close()
 
