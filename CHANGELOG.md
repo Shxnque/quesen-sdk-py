@@ -4,6 +4,38 @@ All notable changes to `quesen-sdk` (Python) will be documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-09-05 · Offline verdict replay (recomputability before adoption)
+
+### Added
+- **`replay(context)`** — recompute the TSC v2 egress/authority verdict
+  `{decision, reason_codes, input_snapshot_hash}` **entirely offline, zero network,
+  standard library only**, from a vendored copy of the public reference evaluator
+  (`quesen_sdk/reference.py`). Accepts a `TscContext` or a raw dict; never raises on
+  malformed input.
+- **`verify_receipt(receipt, recompute_request=...)`** — third assurance level:
+  independently REPLAY the verdict offline and assert it matches the receipt
+  (decision + reasons + hash). A mismatch flips `ok` to `False`; `ReceiptVerification`
+  gains a `recomputed` field (`None` when not requested).
+- Directly answers the two prospect objections that had capped adoption
+  (BEA criticism-ledger C-003 sequant / C-004 loopx): the hosted engine is now an
+  *optimisation*, not a *trust dependency*, for this subset. An engine parity test
+  (Quesen-sib) + the public conformance kit bind the reference to the engine
+  byte-for-byte, so drift is a red CI rather than a silent regression.
+
+### Note
+- Verified byte-for-byte against the live engine for BLOCK / REVIEW / PASS shapes;
+  reproduces the *contract-level* decision/reasons/hash, NOT the production risk
+  weighting/thresholds (honest boundary unchanged).
+
+## [0.5.0] — 2026-09-03 · Enforcement + independently-verifiable receipts
+
+### Added
+- **`QuesenFirewall.guard(...)`** — fail-closed enforcement decorator: a wrapped
+  callable executes ONLY on a PASS verdict (closes the advisory-only gap).
+- **`verify_receipt` / `ReceiptVerification` / `canonical_receipt_bytes`** —
+  client-side receipt verification: structural integrity plus optional Ed25519
+  signature check (`pip install quesen-sdk[verify]`).
+
 ## [0.4.1] — 2026-08-27 · Frictionless onboarding (self-serve sandbox key)
 
 ### Added

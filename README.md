@@ -139,6 +139,45 @@ and [`examples/langchain_firewall.py`](examples/langchain_firewall.py) (LangChai
 
 Async is symmetric — `await AsyncQuesenClient(...).validate_tsc(ctx)`.
 
+## Offline verdict replay — recompute without trusting us (v0.6.0)
+
+Serious integrators asked for one thing before adopting: the ability to **recompute the
+verdict themselves**, offline, rather than trust a hosted closed ruleset (an in-process
+gate has no place to bind a network receipt; a CI-time call to our service adds the exact
+dependency they are trying to remove). v0.6.0 ships exactly that.
+
+```python
+from quesen_sdk import replay, verify_receipt, QuesenFirewall
+
+# Recompute the decision locally — ZERO network, standard library only.
+local = replay({
+    "tsc_version": "2.0",
+    "subject": {"kind": "agent"},
+    "action": {"kind": "data_egress"},
+    "provenance": {"source": "adapter_derived"},
+    "data": {"classes": ["secret"], "egress": {"to": "https://x", "destination_trust": "unverified"}},
+})
+print(local["decision"], local["reason_codes"], local["input_snapshot_hash"])
+# BLOCK ['EGRESS_SECRET_UNTRUSTED'] <sha256>
+
+# Or prove a live receipt is independently reproducible:
+fw = QuesenFirewall.sandbox("https://<engine>")
+ctx = fw.build_context(action="send_data", target="https://x", data_class="secret")
+decision = fw.check(action="send_data", target="https://x", data_class="secret")
+v = verify_receipt(decision, recompute_request=ctx)
+v.recomputed   # True  -> decision + reasons + input_snapshot_hash reproduced offline
+v.require()    # fail-closed: raises on any mismatch
+```
+
+The recompute runs a vendored copy of the **public reference evaluator** (kept byte-for-byte
+in lockstep with the engine by a parity test in the engine repo + the public conformance
+kit). The hosted engine becomes an *optimisation*, not a *trust dependency*, for the
+egress/authority subset.
+
+> Honest boundary: this reproduces the **contract-level** decision/reasons/hash for the
+> egress/authority subset — not the production risk weighting/thresholds. A mismatch means
+> the receipt is not reproducible from the public reference, and `verify_receipt` reports it.
+
 ## Receipt provenance (v1.10, tracked in SDK v0.2.0)
 
 Every `ValidateResult` and `SimulateResult.baseline` / `.simulated` now carries

@@ -47,8 +47,9 @@ from .tsc import (
 )
 from .firewall import QuesenFirewall
 from .receipt import ReceiptVerification, canonical_receipt_bytes, verify_receipt
+from .replay import replay
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "__version__",
@@ -69,6 +70,7 @@ __all__ = [
     "ReceiptVerification",
     "verify_receipt",
     "canonical_receipt_bytes",
+    "replay",
     "QuesenError",
     "QuesenAuthError",
     "QuesenRateLimitError",

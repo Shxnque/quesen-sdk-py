@@ -25,7 +25,7 @@ single hard runtime dependency (`httpx`). Install with: `pip install quesen-sdk[
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping, Optional
 
 __all__ = ["ReceiptVerification", "canonical_receipt_bytes", "verify_receipt"]
@@ -42,10 +42,12 @@ class ReceiptVerification:
     signed: bool           # a cryptographic signature was present
     signature_valid: Optional[bool]  # None if no signature / verifier absent
     reason: str            # human-readable explanation
+    recomputed: Optional[bool] = None  # None if no recompute requested; else offline-replay match
 
     def require(self) -> "ReceiptVerification":
         """Fail-closed: raise unless the receipt is structurally sound AND, when
-        a signature is present, cryptographically valid."""
+        a signature is present, cryptographically valid AND, when an offline
+        recompute was requested, the verdict reproduced."""
         if not self.ok or self.signed and self.signature_valid is not True:
             raise ValueError(f"receipt verification failed: {self.reason}")
         return self
@@ -82,7 +84,7 @@ def canonical_receipt_bytes(receipt: Any) -> bytes:
                       sort_keys=False).encode("utf-8")
 
 
-def verify_receipt(
+def _verify_integrity(
     receipt: Any,
     *,
     public_key_hex: Optional[str] = None,
@@ -140,3 +142,58 @@ def verify_receipt(
         return ReceiptVerification(True, True, False, "signature INVALID — receipt not authentic")
     except Exception as e:
         return ReceiptVerification(True, True, False, f"signature check error: {e}")
+
+
+
+def verify_receipt(
+    receipt: Any,
+    *,
+    public_key_hex: Optional[str] = None,
+    recompute_request: Any = None,
+) -> ReceiptVerification:
+    """Independently verify a Quesen decision receipt on the caller's side.
+
+    Three, increasingly strong, levels of assurance — all running on the caller's
+    machine, no trust in the hosted engine required:
+
+      1. **Structural integrity** — the receipt carries a verdict + a pinnable
+         ``input_snapshot_hash``.
+      2. **Cryptographic authenticity** (optional) — if the receipt is Ed25519-signed
+         and ``public_key_hex`` is supplied, the signature is checked.
+      3. **Verdict reproducibility** (optional) — if ``recompute_request`` is supplied
+         (the original TSC context, a :class:`~quesen_sdk.tsc.TscContext` or dict), the
+         decision + reason codes + ``input_snapshot_hash`` are **recomputed offline**
+         from the public reference evaluator and compared to the receipt. This is the
+         direct answer to "locally replay the verdict rather than only trusting the hash"
+         (criticism-ledger C-003 / C-004). A mismatch flips ``ok`` to ``False``.
+
+    ``recomputed`` is ``None`` when no recompute was requested, else ``True``/``False``.
+    """
+    result = _verify_integrity(receipt, public_key_hex=public_key_hex)
+    if recompute_request is None:
+        return result
+
+    from .reference import evaluate  # local import keeps import graph light
+
+    d = _as_dict(receipt)
+    ctx = recompute_request.to_dict() if hasattr(recompute_request, "to_dict") else recompute_request
+    ok, ref = evaluate(ctx)
+    if not ok:
+        err = ref.get("error", {}).get("code", "unknown")
+        return replace(result, ok=False, recomputed=False,
+                       reason=result.reason + f"; recompute FAILED — reference rejected input ({err})")
+
+    receipt_reason_codes = [r.get("code") for r in d.get("reasons", [])]
+    matches = (
+        ref["decision"] == d.get("decision")
+        and ref["reason_codes"] == receipt_reason_codes
+        and ref["input_snapshot_hash"] == d.get("input_snapshot_hash")
+    )
+    if matches:
+        return replace(result, recomputed=True,
+                       reason=result.reason + "; verdict independently recomputed offline "
+                       "(decision + reasons + input_snapshot_hash match)")
+    return replace(result, ok=False, recomputed=False,
+                   reason=result.reason + "; recompute MISMATCH — receipt not reproducible "
+                   f"from public reference (local decision={ref['decision']}, "
+                   f"hash_match={ref['input_snapshot_hash'] == d.get('input_snapshot_hash')})")

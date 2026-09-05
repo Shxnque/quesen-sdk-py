@@ -33,7 +33,7 @@ from .types import ReportResult, SimulateResult, ValidateResult
 
 __all__ = ["QuesenClient", "AsyncQuesenClient", "DEFAULT_USER_AGENT"]
 
-DEFAULT_USER_AGENT = "quesen-sdk-py/0.5.0"
+DEFAULT_USER_AGENT = "quesen-sdk-py/0.6.0"
 
 
 def _tsc_body(context: Any) -> Dict[str, Any]:

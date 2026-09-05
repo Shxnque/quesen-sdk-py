@@ -122,6 +122,15 @@ class QuesenFirewall:
         """Return the raw TscDecision for a described action (no raising)."""
         return self._client.validate_tsc(self._build(**kwargs))
 
+    def build_context(self, **kwargs: Any) -> TscContext:
+        """Return the TscContext this firewall would send for a described action.
+
+        Public accessor over the internal builder — lets integrators recompute a
+        verdict offline (``quesen_sdk.replay`` / ``verify_receipt(recompute_request=...)``)
+        against the EXACT context that produced a receipt, without re-deriving it by hand.
+        """
+        return self._build(**kwargs)
+
     def allows(self, **kwargs: Any) -> bool:
         """True only if the engine returned an explicit PASS (fail-closed)."""
         return self.check(**kwargs).allowed
