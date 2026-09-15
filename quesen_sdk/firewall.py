@@ -62,7 +62,7 @@ class QuesenFirewall:
 
             from quesen_sdk import QuesenFirewall
 
-            fw = QuesenFirewall.sandbox("https://web-production-aa5ba.up.railway.app")
+            fw = QuesenFirewall.sandbox("https://web-production-3df26.up.railway.app")
             fw.require_pass(agent="my-agent", action="send_data",
                             target="https://paste.evil.example",
                             data_class="secret")   # raises TscBlocked (BLOCK)

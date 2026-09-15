@@ -3,7 +3,7 @@
 > Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic agent-firewall / A2A risk-evaluation API.
 
 **Status:** v0.4.1 · tracks Quesen engine v1.10.0 (+ TSC v2 agent firewall) · backward compatible with v1.0.0+ deployments.
-**Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the hosted engine is served at `https://web-production-aa5ba.up.railway.app`.
+**Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the hosted engine is served at `https://web-production-3df26.up.railway.app`.
 
 ---
 
@@ -26,7 +26,7 @@ self-serves a **free** sandbox key for you (no signup, no card), so this runs as
 from quesen_sdk import QuesenFirewall, TscBlocked
 
 # Zero-config: mints a free sandbox key against the hosted engine.
-fw = QuesenFirewall.sandbox("https://web-production-aa5ba.up.railway.app")
+fw = QuesenFirewall.sandbox("https://web-production-3df26.up.railway.app")
 
 # Your agent is about to exfiltrate a secret to an untrusted host. Ask Quesen first.
 try:
@@ -64,7 +64,7 @@ print(d.decision)          # 'PASS'
 ```python
 from quesen_sdk import QuesenClient
 
-client = QuesenClient(base_url="https://web-production-aa5ba.up.railway.app")
+client = QuesenClient(base_url="https://web-production-3df26.up.railway.app")
 client.create_sandbox_key()   # free key, now authenticated
 
 result = client.validate(
@@ -97,7 +97,7 @@ grants are refused.
 from quesen_sdk import QuesenClient
 from quesen_sdk.tsc import TscContext, TscBlocked
 
-client = QuesenClient(base_url="https://web-production-aa5ba.up.railway.app")
+client = QuesenClient(base_url="https://web-production-3df26.up.railway.app")
 client.create_sandbox_key()   # free key (or pass api_key="sk_live_..." for production)
 
 # Your agent is about to POST data somewhere. Ask Quesen first.
@@ -233,7 +233,7 @@ import asyncio
 from quesen_sdk import AsyncQuesenClient
 
 async def main() -> None:
-    async with AsyncQuesenClient(base_url="https://web-production-aa5ba.up.railway.app") as q:
+    async with AsyncQuesenClient(base_url="https://web-production-3df26.up.railway.app") as q:
         await q.create_sandbox_key()   # free key (or pass api_key="sk_live_..." above)
         decision = await q.validate(domain_age_days=200, engagement_ratio=0.3)
         if decision.decision == "SKIP":
