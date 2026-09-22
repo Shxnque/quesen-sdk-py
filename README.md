@@ -1,6 +1,6 @@
 # Quesen Python SDK
 
-> Official typed Python client for [Quesen](https://senueren.co.za/quesen) — the deterministic agent-firewall / A2A risk-evaluation API.
+> Official typed Python client for [Quesen](https://senueren.co.za/quesen) — deterministic **AI agent authorization & governance** infrastructure: a portable decision + authority + evidence layer (runtime authorization for agent tool calls, MCP tool authorization and agent payment authorization) returning PASS/REVIEW/BLOCK/SKIP with machine reason codes and replayable audit receipts.
 
 **Status:** v0.4.1 · tracks Quesen engine v1.10.0 (+ TSC v2 agent firewall) · backward compatible with v1.0.0+ deployments.
 **Developer portal:** [`senueren.co.za/quesen`](https://senueren.co.za/quesen) — canonical docs, API reference, and integration guides. This SDK is a thin HTTP client; the hosted engine is served at `https://web-production-3df26.up.railway.app`.
