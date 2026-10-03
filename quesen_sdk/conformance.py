@@ -23,6 +23,7 @@ from typing import List
 
 from .receipt import canonical_receipt_bytes, verify_receipt
 from .execution import action_hash
+from .admissibility import check_admissibility, grant_hash
 
 # --- Embedded golden vectors (must match conformance/vectors/* and the engine) ----------
 # Rule-B: signed receipt preimage {decision,input_snapshot_hash,commit_sha,reasons}, fixed order.
@@ -68,6 +69,34 @@ _ACTION_VECTORS = [
 
 CONTRACT_VERSION = "evidence-contract/v1"
 
+# Rule-A: admissibility (ADR-052) — bounded authority -> is THIS action within scope?
+_GRANT_A = {
+    "allowed_actions": ["payment.execute"],
+    "allowed_targets": ["https://vendor-a.example/api"],
+    "allowed_currencies": ["USDC"],
+    "max_amount": "5000.00",
+}
+_ADMISSIBILITY_VECTORS = [
+    {
+        "name": "within_bounds",
+        "grant": _GRANT_A,
+        "action": {"action": "payment.execute", "target": "https://vendor-a.example/api",
+                   "parameters": {"amount": "4999.99", "currency": "USDC"}},
+        "grant_hash": "sha256:54020f407615c26e701d0da64b4464007b620bd3da8d7935633f95fb7d7fd498",
+        "admissible": True,
+        "violations": [],
+    },
+    {
+        "name": "operator_example_vendor_b_over",
+        "grant": _GRANT_A,
+        "action": {"action": "payment.execute", "target": "https://vendor-b.example/api",
+                   "parameters": {"amount": "8000", "currency": "USDC"}},
+        "grant_hash": "sha256:54020f407615c26e701d0da64b4464007b620bd3da8d7935633f95fb7d7fd498",
+        "admissible": False,
+        "violations": ["AMOUNT_EXCEEDS_MAX", "TARGET_NOT_ALLOWED"],
+    },
+]
+
 
 def _cmd_conformance(_: argparse.Namespace) -> int:
     failures = 0
@@ -90,6 +119,19 @@ def _cmd_conformance(_: argparse.Namespace) -> int:
         if not ok:
             print(f"        expected: {v['action_hash']}")
             print(f"        got:      {got}")
+    print("Admissibility (ADR-052) — bounded-authority boundary:")
+    for v in _ADMISSIBILITY_VECTORS:
+        r = check_admissibility(v["grant"], v["action"])
+        ok = (
+            r.admissible == v["admissible"]
+            and list(r.violations) == v["violations"]
+            and grant_hash(v["grant"]) == v["grant_hash"]
+        )
+        failures += 0 if ok else 1
+        print(f"  [{'PASS' if ok else 'FAIL'}] {v['name']}")
+        if not ok:
+            print(f"        expected: admissible={v['admissible']} violations={v['violations']}")
+            print(f"        got:      admissible={r.admissible} violations={list(r.violations)}")
     if failures:
         print(f"\nNOT CONFORMANT — {failures} vector(s) drifted from the Quesen evidence contract.")
         return 1

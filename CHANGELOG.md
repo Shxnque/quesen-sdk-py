@@ -4,6 +4,23 @@ All notable changes to `quesen-sdk` (Python) will be documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-10-03 · Admissibility (constraint-bound authority · ADR-052)
+
+### Added
+- **`quesen_sdk.admissibility`** — client-side mirror of the engine admissibility
+  primitive. `check_admissibility(grant, action)` deterministically decides whether a
+  specific action is within a *bounded* authority grant (`allowed_actions`/`allowed_targets`/
+  `allowed_currencies`/`max_amount`/`max_qty`), returning `admissible` + a sorted,
+  de-duplicated set of violation codes. Fail-closed; **no floats in money comparison**
+  (determinism). Also `grant_hash`, `canonical_grant_bytes`, `admissibility_evidence` (ties
+  authorization receipt → grant → execution binding). Byte-identical to the engine and the
+  JS SDK (shared conformance vectors).
+- **`quesen conformance` CLI** now also proves admissibility conformance against embedded
+  golden vectors (incl. the canonical `≤$5000 vendor-a` / `$8000 vendor-b` example).
+
+### Notes
+- Strictly additive; existing callers unchanged. Tracks engine `quesen.evidence.admissibility`.
+
 ## [0.6.0] — 2026-09-05 · Offline verdict replay (recomputability before adoption)
 
 ### Added

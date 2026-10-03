@@ -54,8 +54,16 @@ from .execution import (
     canonical_action_bytes,
     verify_execution_binding,
 )
+from .admissibility import (
+    AdmissibilityResult,
+    GRANT_FIELDS,
+    admissibility_evidence,
+    canonical_grant_bytes,
+    check_admissibility,
+    grant_hash,
+)
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 __all__ = [
     "__version__",
@@ -81,6 +89,12 @@ __all__ = [
     "action_hash",
     "verify_execution_binding",
     "BindingVerification",
+    "AdmissibilityResult",
+    "GRANT_FIELDS",
+    "admissibility_evidence",
+    "canonical_grant_bytes",
+    "check_admissibility",
+    "grant_hash",
     "QuesenError",
     "QuesenAuthError",
     "QuesenRateLimitError",
