@@ -48,6 +48,12 @@ from .tsc import (
 from .firewall import QuesenFirewall
 from .receipt import ReceiptVerification, canonical_receipt_bytes, verify_receipt
 from .replay import replay
+from .execution import (
+    BindingVerification,
+    action_hash,
+    canonical_action_bytes,
+    verify_execution_binding,
+)
 
 __version__ = "0.6.1"
 
@@ -71,6 +77,10 @@ __all__ = [
     "verify_receipt",
     "canonical_receipt_bytes",
     "replay",
+    "canonical_action_bytes",
+    "action_hash",
+    "verify_execution_binding",
+    "BindingVerification",
     "QuesenError",
     "QuesenAuthError",
     "QuesenRateLimitError",
